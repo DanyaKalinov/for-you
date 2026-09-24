@@ -12,9 +12,8 @@
   let W = innerWidth, H = innerHeight, dpr = Math.min(devicePixelRatio || 1, 2);
   let targetP = 0, p = 0, time = 0;
   const TAU = Math.PI * 2;
-  
-  // Увеличиваем число частиц для четкости
-  const N = W < 768 ? 11000 : 13000;
+
+  const N = W < 768 ? 4000 : 7000;
   const P = [];
   const fireworks = [];
   const starSparks = [];
@@ -30,54 +29,6 @@
     canvas.width = Math.floor(W * dpr); canvas.height = Math.floor(H * dpr);
     canvas.style.width = W + "px"; canvas.style.height = H + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    rebuildTargets();
-  }
-
-  // Оптимизированный сэмплер текста с высочайшей чёткостью
-  function sampleText(linesArray, targetFontPx) {
-    const ow = Math.floor(Math.min(W * 0.95, 1000));
-    const oh = Math.floor(Math.min(H * 0.90, 800));
-    const oc = document.createElement("canvas");
-    oc.width = ow; oc.height = oh;
-    const g = oc.getContext("2d", { willReadFrequently: true });
-    
-    let fontPx = targetFontPx;
-    g.font = `900 ${fontPx}px "Manrope", "Arial Black", sans-serif`;
-
-    // Авто-масштаб под ширину экрана
-    linesArray.forEach(line => {
-      const metrics = g.measureText(line);
-      if (metrics.width > ow) {
-        const ratio = ow / metrics.width;
-        fontPx = Math.floor(fontPx * ratio * 0.95);
-      }
-    });
-
-    g.font = `900 ${fontPx}px "Manrope", "Arial Black", sans-serif`;
-    g.clearRect(0, 0, ow, oh);
-    g.fillStyle = "#ffffff"; 
-    g.textAlign = "center"; 
-    g.textBaseline = "middle";
-
-    const lineHeight = fontPx * 1.35;
-    const startY = oh / 2 - ((linesArray.length - 1) * lineHeight) / 2;
-
-    linesArray.forEach((line, idx) => {
-      g.fillText(line, ow / 2, startY + idx * lineHeight);
-    });
-
-    const data = g.getImageData(0, 0, ow, oh).data;
-    const pts = [];
-    const step = W < 600 ? 1.5 : 2; // Более мелкий шаг для высокой детализации
-
-    for (let y = 0; y < oh; y += step) {
-      for (let x = 0; x < ow; x += step) {
-        if (data[Math.floor(y) * ow * 4 + Math.floor(x) * 4 + 3] > 110) {
-          pts.push({ x: x - ow / 2, y: y - oh / 2 });
-        }
-      }
-    }
-    return pts;
   }
 
   function pointHeart() {
@@ -115,50 +66,6 @@
     }
   }
 
-  let textTargets = [];
-  function rebuildTargets() {
-    const isMobile = W < 600;
-
-    const configs = [
-      {
-        lines: ["ПРИВЕТ ЛЮБИМАЯ", "СЕГОДНЯ", "ОСОБЕННЫЙ ДЕНЬ"],
-        size: isMobile ? 32 : 48
-      },
-      {
-        lines: ["ТЫ МОЁ САМОЕ", "ЛЮБИМОЕ ЧУДО"],
-        size: isMobile ? 34 : 52
-      },
-      {
-        // 6 строк комплиментов с идеальным размером шрифта
-        lines: [
-          "ТВОЯ УЛЫБКА МЕНЯЕТ ВСЁ ВОКРУГ",
-          "ОБОЖАЮ ТВОЙ НЕЖНЫЙ ВЗГЛЯД",
-          "С ТОБОЙ НЕВЕРОЯТНО ТЕПЛО",
-          "ТЫ ВДОХНОВЛЯЕШЬ МЕНЯ КАЖДЫЙ ДЕНЬ",
-          "РЯДОМ С ТОБОЙ ВСЁ СТАНОВИТСЯ ЯРЧЕ",
-          "В ЭТОТ ДЕНЬ РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"
-        ],
-        size: isMobile ? 21 : 32
-      },
-      {
-        lines: ["ТЫ", "НЕВЕРОЯТНАЯ"],
-        size: isMobile ? 50 : 76
-      },
-      {
-        lines: ["В ЭТОТ ДЕНЬ", "РОДИЛАСЬ МОЯ", "ВСЕЛЕННАЯ"],
-        size: isMobile ? 32 : 50
-      },
-      {
-        lines: isMobile 
-          ? ["С ДНЁМ РОЖДЕНИЯ", "ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ", "МОЁ СОЛНЫШКО"] 
-          : ["С ДНЁМ РОЖДЕНИЯ ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ МОЁ СОЛНЫШКО"],
-        size: isMobile ? 28 : 46
-      }
-    ];
-
-    textTargets = configs.map(c => sampleText(c.lines, c.size));
-  }
-
   for (let i = 0; i < N; i++) {
     const a = Math.random() * TAU, r = Math.pow(Math.random(), .55) * Math.min(W, H) * .7;
     P.push({
@@ -167,16 +74,10 @@
       star: pointStar(),
       cake: pointCakeAndPetals(),
       z: Math.random(), 
-      size: rand(1.1, 1.8), 
+      size: rand(0.8, 1.8), 
       phase: Math.random() * TAU, 
       speed: rand(.3, 1.1)
     });
-  }
-
-  function assignText(textIndex, i) {
-    const pts = textTargets[textIndex] || [];
-    if (!pts || pts.length === 0) return { x: 0, y: 0 };
-    return pts[i % pts.length];
   }
 
   function morph(a, b, t) { 
@@ -184,14 +85,11 @@
   }
 
   function target(part, i) {
-    if (p < 0.8) return morph(part.rnd, assignText(0, i), smooth(clamp(p / 0.8, 0, 1)));
-    if (p < 1.6) return morph(assignText(0, i), assignText(1, i), smoother(clamp((p - 0.8) / 0.8, 0, 1)));
-    if (p < 2.4) return morph(assignText(1, i), part.heart, smoother(clamp((p - 1.6) / 0.8, 0, 1)));
-    if (p < 3.2) return morph(part.heart, assignText(2, i), smoother(clamp((p - 2.4) / 0.8, 0, 1)));
-    if (p < 4.0) return morph(assignText(2, i), assignText(3, i), smoother(clamp((p - 3.2) / 0.8, 0, 1)));
-    if (p < 4.8) return morph(assignText(3, i), part.star, smoother(clamp((p - 4.0) / 0.8, 0, 1)));
-    if (p < 5.4) return morph(part.star, part.cake, smoother(clamp((p - 4.8) / 0.6, 0, 1)));
-    return morph(part.cake, assignText(5, i), smoother(clamp((p - 5.4) / 0.6, 0, 1)));
+    if (p < 0.8) return morph(part.rnd, part.heart, smooth(clamp(p / 0.8, 0, 1)));
+    if (p < 2.4) return part.heart;
+    if (p < 3.2) return morph(part.heart, part.star, smoother(clamp((p - 2.4) / 0.8, 0, 1)));
+    if (p < 4.8) return morph(part.star, part.cake, smoother(clamp((p - 3.2) / 1.6, 0, 1)));
+    return part.cake;
   }
 
   function palette() {
@@ -208,51 +106,108 @@
     p += (targetP - p) * 0.08;
   }
 
-  function drawFinalHeartEffect() {
-    if (p < 4.6 || p > 5.5) return;
+  // Отрисовка идеально чистого и резкого текста для любой сцены
+  function drawCleanText(lines, fontSize, color, alpha = 1) {
+    if (alpha <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    const isMobile = W < 600;
+    const maxW = W * 0.92;
     
-    const alpha = clamp((p - 4.6) / 0.25, 0, 1) * clamp((5.5 - p) / 0.25, 0, 1);
+    ctx.font = `800 ${fontSize}px "Manrope", "Arial Black", sans-serif`;
+
+    // Авто-подгонка под ширину мобильного экрана
+    let adjustedFont = fontSize;
+    lines.forEach(line => {
+      const w = ctx.measureText(line).width;
+      if (w > maxW) {
+        const r = maxW / w;
+        adjustedFont = Math.floor(adjustedFont * r);
+      }
+    });
+
+    ctx.font = `800 ${adjustedFont}px "Manrope", "Arial Black", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = color;
+    
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 12;
+
+    const lh = adjustedFont * 1.35;
+    const startY = H / 2 - ((lines.length - 1) * lh) / 2;
+
+    lines.forEach((line, idx) => {
+      ctx.fillText(line, W / 2, startY + idx * lh);
+    });
+
+    ctx.restore();
+  }
+
+  function renderSceneTexts() {
+    const isMobile = W < 600;
+
+    // Сцена 1 (p: 0 - 0.8)
+    if (p < 0.8) {
+      const a = clamp(p / 0.6, 0, 1) * clamp((0.8 - p) / 0.2, 0, 1);
+      drawCleanText(["ПРИВЕТ ЛЮБИМАЯ", "СЕГОДНЯ", "ОСОБЕННЫЙ ДЕНЬ"], isMobile ? 26 : 42, "#6ee7b7", a);
+    }
+    // Сцена 2 (p: 0.8 - 1.6)
+    else if (p < 1.6) {
+      const a = clamp((p - 0.8) / 0.3, 0, 1) * clamp((1.6 - p) / 0.3, 0, 1);
+      drawCleanText(["ТЫ МОЁ САМОЕ", "ЛЮБИМОЕ ЧУДО"], isMobile ? 28 : 46, "#38bdf8", a);
+    }
+    // Сцена 3 (Сердце без перекрытия текстом)
+    // Сцена 4 (Комплименты 6 строк) - ТЕПЕРЬ 100% ЧИТАЕМЫЙ И КРАСИВЫЙ ТЕКСТ!
+    else if (p >= 2.4 && p < 3.2) {
+      const a = clamp((p - 2.4) / 0.25, 0, 1) * clamp((3.2 - p) / 0.25, 0, 1);
+      const lines = [
+        "ТВОЯ УЛЫБКА МЕНЯЕТ ВСЁ ВОКРУГ",
+        "ОБОЖАЮ ТВОЙ НЕЖНЫЙ ВЗГЛЯД",
+        "С ТОБОЙ НЕВЕРОЯТНО ТЕПЛО",
+        "ТЫ ВДОХНОВЛЯЕШЬ МЕНЯ КАЖДЫЙ ДЕНЬ",
+        "РЯДОМ С ТОБОЙ ВСЁ СТАНОВИТСЯ ЯРЧЕ",
+        "В ЭТОТ ДЕНЬ РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"
+      ];
+      drawCleanText(lines, isMobile ? 18 : 26, "#f472b6", a);
+    }
+    // Сцена 5 (p: 3.2 - 4.0)
+    else if (p >= 3.2 && p < 4.0) {
+      const a = clamp((p - 3.2) / 0.25, 0, 1) * clamp((4.0 - p) / 0.25, 0, 1);
+      drawCleanText(["ТЫ", "НЕВЕРОЯТНАЯ"], isMobile ? 42 : 68, "#c084fc", a);
+    }
+    // Сцена 6 (p: 4.0 - 4.8)
+    else if (p >= 4.0 && p < 4.8) {
+      const a = clamp((p - 4.0) / 0.25, 0, 1) * clamp((4.8 - p) / 0.25, 0, 1);
+      drawCleanText(["В ЭТОТ ДЕНЬ", "РОДИЛАСЬ МОЯ", "ВСЕЛЕННАЯ"], isMobile ? 28 : 44, "#fbbf24", a);
+    }
+    // Сцена 7 (Финал)
+    else if (p >= 5.4) {
+      const a = clamp((p - 5.4) / 0.3, 0, 1);
+      const lines = isMobile 
+        ? ["С ДНЁМ РОЖДЕНИЯ", "ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ", "МОЁ СОЛНЫШКО"] 
+        : ["С ДНЁМ РОЖДЕНИЯ ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ МОЁ СОЛНЫШКО"];
+      drawCleanText(lines, isMobile ? 24 : 40, "#f43f5e", a);
+    }
+  }
+
+  function drawFinalHeartEffect() {
+    if (p < 1.6 || p > 2.4) return;
+    
+    const alpha = clamp((p - 1.6) / 0.25, 0, 1) * clamp((2.4 - p) / 0.25, 0, 1);
     ctx.save();
     ctx.globalAlpha = alpha;
 
     const cx = W / 2, cy = H / 2;
-    const count = 52;
-    
-    const expandProgress = clamp((p - 4.75) / 0.35, 0, 1);
-    const scaleProgress = smoother(expandProgress);
-
     const pulse = 1 + Math.sin(time * 3) * 0.03;
-    const finalScale = (Math.min(W, H) / 44) * pulse;
-    const currentScale = finalScale * scaleProgress;
 
-    ctx.font = "900 11px sans-serif";
-    ctx.fillStyle = "#38bdf8";
-    ctx.shadowColor = "#0284c7";
-    ctx.shadowBlur = 8;
-
-    if (scaleProgress > 0.05) {
-      for (let i = 0; i < count; i++) {
-        const t = (i / count) * TAU;
-        const x = 16 * Math.pow(Math.sin(t), 3);
-        const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
-        
-        const px = cx + x * currentScale;
-        const py = cy - y * currentScale;
-
-        const flick = 0.75 + 0.25 * Math.sin(time * 5 + i);
-        ctx.globalAlpha = alpha * flick * scaleProgress;
-        ctx.fillText("Love You", px - 22, py);
-      }
-    }
-
-    const centerAlpha = alpha * clamp((p - 4.6) / 0.2, 0, 1);
-    ctx.globalAlpha = centerAlpha;
-    ctx.font = `italic 500 ${Math.round(Math.min(W / 10, 46))}px 'Cormorant Garamond', serif`;
+    ctx.font = `italic 500 ${Math.round(Math.min(W / 9, 44))}px 'Cormorant Garamond', serif`;
     ctx.fillStyle = "#ffffff";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.shadowColor = "#38bdf8";
-    ctx.shadowBlur = 18;
+    ctx.shadowColor = "#f472b6";
+    ctx.shadowBlur = 20;
     ctx.fillText("I Love You", cx, cy);
 
     ctx.restore();
@@ -362,29 +317,25 @@
     }
 
     const col = palette(), cx = W / 2, cy = H / 2;
-    const isText = (p < 1.6 || (p > 2.6 && p < 4.2) || p > 5.4);
-    
-    // В режиме текста полностью убираем дрейф и колебания, чтобы не размывать буквы
-    const driftMult = isText ? 0 : 0.8;
 
+    // Отрисовка фонового волшебного облака частиц
     for (let i = 0; i < P.length; i++) {
       const part = P[i], q = target(part, i);
-      const driftX = Math.sin(time * part.speed + part.phase) * driftMult;
-      const driftY = Math.cos(time * part.speed * .7 + part.phase) * driftMult;
+      const driftX = Math.sin(time * part.speed + part.phase) * 0.6;
+      const driftY = Math.cos(time * part.speed * .7 + part.phase) * 0.6;
       
       const x = cx + (q.x + driftX);
       const y = cy + (q.y + driftY);
-      
-      // В режиме текста делаем максимальную прозрачность и чуть больший радиус (1.6px)
-      const a = isText ? 1.0 : (.3 + .5 * Math.sin(time * 2 + part.phase));
-      const size = isText ? 1.55 : part.size;
+      const a = 0.25 + 0.45 * Math.sin(time * 2 + part.phase);
 
       ctx.beginPath();
       ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${a})`;
-      ctx.arc(x, y, size, 0, TAU);
+      ctx.arc(x, y, part.size, 0, TAU);
       ctx.fill();
     }
 
+    // Рендер безупречно чёткого текста и спецеффектов
+    renderSceneTexts();
     drawFinalHeartEffect();
 
     spawnFirework();
