@@ -32,21 +32,34 @@
     rebuildTargets();
   }
 
-  // Генерация точек с учетом крупного шрифта
-  function sampleText(linesArray, fontPx) {
-    const ow = Math.floor(Math.min(W * 0.98, 1000));
-    const oh = Math.floor(Math.min(H * 0.85, 800));
+  // Генератор точек с оптимизированной разметкой для длинных текстов
+  function sampleText(linesArray, targetFontPx) {
+    const ow = Math.floor(Math.min(W * 0.96, 1200));
+    const oh = Math.floor(Math.min(H * 0.90, 900));
     const oc = document.createElement("canvas");
     oc.width = ow; oc.height = oh;
     const g = oc.getContext("2d", { willReadFrequently: true });
     
+    let fontPx = targetFontPx;
+    g.font = `900 ${fontPx}px "Manrope", "Arial Black", sans-serif`;
+
+    // Точная подгонка размера под ширину холста без искажения пропорций
+    linesArray.forEach(line => {
+      const metrics = g.measureText(line);
+      if (metrics.width > ow) {
+        const ratio = ow / metrics.width;
+        fontPx = Math.floor(fontPx * ratio * 0.98);
+      }
+    });
+
+    g.font = `900 ${fontPx}px "Manrope", "Arial Black", sans-serif`;
     g.clearRect(0, 0, ow, oh);
     g.fillStyle = "#ffffff"; 
     g.textAlign = "center"; 
     g.textBaseline = "middle";
-    g.font = `900 ${fontPx}px "Manrope", "Arial Black", sans-serif`;
 
-    const lineHeight = fontPx * 1.2;
+    // Увеличенный межстрочный интервал (1.45) предотвращает слипание букв
+    const lineHeight = fontPx * 1.45;
     const startY = oh / 2 - ((linesArray.length - 1) * lineHeight) / 2;
 
     linesArray.forEach((line, idx) => {
@@ -106,17 +119,17 @@
   function rebuildTargets() {
     const isMobile = W < 600;
 
-    // Заметно увеличены размеры шрифтов (size) для мобильных устройств
     const configs = [
       {
         lines: ["ПРИВЕТ ЛЮБИМАЯ", "СЕГОДНЯ", "ОСОБЕННЫЙ ДЕНЬ"],
-        size: isMobile ? 26 : 44
+        size: isMobile ? 32 : 48
       },
       {
         lines: ["ТЫ МОЁ САМОЕ", "ЛЮБИМОЕ ЧУДО"],
-        size: isMobile ? 30 : 48
+        size: isMobile ? 34 : 52
       },
       {
+        // Исходный текст из 6 строк без изменений
         lines: [
           "ТВОЯ УЛЫБКА МЕНЯЕТ ВСЁ ВОКРУГ",
           "ОБОЖАЮ ТВОЙ НЕЖНЫЙ ВЗГЛЯД",
@@ -125,21 +138,21 @@
           "РЯДОМ С ТОБОЙ ВСЁ СТАНОВИТСЯ ЯРЧЕ",
           "В ЭТОТ ДЕНЬ РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"
         ],
-        size: isMobile ? 15 : 22
+        size: isMobile ? 22 : 28
       },
       {
         lines: ["ТЫ", "НЕВЕРОЯТНАЯ"],
-        size: isMobile ? 36 : 64
+        size: isMobile ? 42 : 68
       },
       {
         lines: ["В ЭТОТ ДЕНЬ", "РОДИЛАСЬ МОЯ", "ВСЕЛЕННАЯ"],
-        size: isMobile ? 28 : 46
+        size: isMobile ? 32 : 50
       },
       {
         lines: isMobile 
           ? ["С ДНЁМ РОЖДЕНИЯ", "ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ", "МОЁ СОЛНЫШКО"] 
-          : ["С ДНЁМ РОЖДЕНИЯ ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ, МОЁ СОЛНЫШКО"],
-        size: isMobile ? 26 : 44
+          : ["С ДНЁМ РОЖДЕНИЯ ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ МОЁ СОЛНЫШКО"],
+        size: isMobile ? 28 : 46
       }
     ];
 
