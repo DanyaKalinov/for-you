@@ -13,7 +13,7 @@
   let targetP = 0, p = 0, time = 0;
   const TAU = Math.PI * 2;
   
-  const N = W < 768 ? 6500 : 9000;
+  const N = W < 768 ? 7000 : 9000;
   const P = [];
   const fireworks = [];
   const starSparks = [];
@@ -32,10 +32,10 @@
     rebuildTargets();
   }
 
-  // Генерация точек строго в рамках видимой ширины экрана W
+  // Генерация точек с учетом крупного шрифта
   function sampleText(linesArray, fontPx) {
-    const ow = Math.floor(Math.min(W * 0.95, 1000));
-    const oh = Math.floor(Math.min(H * 0.8, 800));
+    const ow = Math.floor(Math.min(W * 0.98, 1000));
+    const oh = Math.floor(Math.min(H * 0.85, 800));
     const oc = document.createElement("canvas");
     oc.width = ow; oc.height = oh;
     const g = oc.getContext("2d", { willReadFrequently: true });
@@ -46,7 +46,7 @@
     g.textBaseline = "middle";
     g.font = `900 ${fontPx}px "Manrope", "Arial Black", sans-serif`;
 
-    const lineHeight = fontPx * 1.25;
+    const lineHeight = fontPx * 1.2;
     const startY = oh / 2 - ((linesArray.length - 1) * lineHeight) / 2;
 
     linesArray.forEach((line, idx) => {
@@ -55,11 +55,11 @@
 
     const data = g.getImageData(0, 0, ow, oh).data;
     const pts = [];
-    const step = W < 600 ? 2 : 2.5;
+    const step = 2;
 
     for (let y = 0; y < oh; y += step) {
       for (let x = 0; x < ow; x += step) {
-        if (data[Math.floor(y) * ow * 4 + Math.floor(x) * 4 + 3] > 110) {
+        if (data[Math.floor(y) * ow * 4 + Math.floor(x) * 4 + 3] > 100) {
           pts.push({ x: x - ow / 2, y: y - oh / 2 });
         }
       }
@@ -106,14 +106,15 @@
   function rebuildTargets() {
     const isMobile = W < 600;
 
+    // Заметно увеличены размеры шрифтов (size) для мобильных устройств
     const configs = [
       {
-        lines: ["ПРИВЕТ ЛЮБИМАЯ", "СЕГОДНЯ ОСОБЕННЫЙ ДЕНЬ"],
-        size: isMobile ? 18 : 44
+        lines: ["ПРИВЕТ ЛЮБИМАЯ", "СЕГОДНЯ", "ОСОБЕННЫЙ ДЕНЬ"],
+        size: isMobile ? 26 : 44
       },
       {
         lines: ["ТЫ МОЁ САМОЕ", "ЛЮБИМОЕ ЧУДО"],
-        size: isMobile ? 20 : 48
+        size: isMobile ? 30 : 48
       },
       {
         lines: [
@@ -124,21 +125,21 @@
           "РЯДОМ С ТОБОЙ ВСЁ СТАНОВИТСЯ ЯРЧЕ",
           "В ЭТОТ ДЕНЬ РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"
         ],
-        size: isMobile ? 11 : 22
+        size: isMobile ? 15 : 22
       },
       {
-        lines: ["ТЫ НЕВЕРОЯТНАЯ"],
-        size: isMobile ? 24 : 64
+        lines: ["ТЫ", "НЕВЕРОЯТНАЯ"],
+        size: isMobile ? 36 : 64
       },
       {
-        lines: ["В ЭТОТ ДЕНЬ", "РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"],
-        size: isMobile ? 18 : 46
+        lines: ["В ЭТОТ ДЕНЬ", "РОДИЛАСЬ МОЯ", "ВСЕЛЕННАЯ"],
+        size: isMobile ? 28 : 46
       },
       {
         lines: isMobile 
           ? ["С ДНЁМ РОЖДЕНИЯ", "ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ", "МОЁ СОЛНЫШКО"] 
-          : ["С ДНЁМ РОЖДЕНИЯ ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ МОЁ СОЛНЫШКО"],
-        size: isMobile ? 18 : 44
+          : ["С ДНЁМ РОЖДЕНИЯ ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ, МОЁ СОЛНЫШКО"],
+        size: isMobile ? 26 : 44
       }
     ];
 
