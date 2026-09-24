@@ -32,10 +32,10 @@
     rebuildTargets();
   }
 
-  // Фиксированный холст для текста предотвращает искажения на смартфонах
+  // Генерация точек строго в рамках видимой ширины экрана W
   function sampleText(linesArray, fontPx) {
-    const ow = 800;
-    const oh = 800;
+    const ow = Math.floor(Math.min(W * 0.95, 1000));
+    const oh = Math.floor(Math.min(H * 0.8, 800));
     const oc = document.createElement("canvas");
     oc.width = ow; oc.height = oh;
     const g = oc.getContext("2d", { willReadFrequently: true });
@@ -55,11 +55,11 @@
 
     const data = g.getImageData(0, 0, ow, oh).data;
     const pts = [];
-    const step = 2;
+    const step = W < 600 ? 2 : 2.5;
 
     for (let y = 0; y < oh; y += step) {
       for (let x = 0; x < ow; x += step) {
-        if (data[y * ow * 4 + x * 4 + 3] > 110) {
+        if (data[Math.floor(y) * ow * 4 + Math.floor(x) * 4 + 3] > 110) {
           pts.push({ x: x - ow / 2, y: y - oh / 2 });
         }
       }
@@ -109,11 +109,11 @@
     const configs = [
       {
         lines: ["ПРИВЕТ ЛЮБИМАЯ", "СЕГОДНЯ ОСОБЕННЫЙ ДЕНЬ"],
-        size: isMobile ? 26 : 44
+        size: isMobile ? 18 : 44
       },
       {
         lines: ["ТЫ МОЁ САМОЕ", "ЛЮБИМОЕ ЧУДО"],
-        size: isMobile ? 28 : 48
+        size: isMobile ? 20 : 48
       },
       {
         lines: [
@@ -124,21 +124,21 @@
           "РЯДОМ С ТОБОЙ ВСЁ СТАНОВИТСЯ ЯРЧЕ",
           "В ЭТОТ ДЕНЬ РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"
         ],
-        size: isMobile ? 14 : 22
+        size: isMobile ? 11 : 22
       },
       {
         lines: ["ТЫ НЕВЕРОЯТНАЯ"],
-        size: isMobile ? 32 : 64
+        size: isMobile ? 24 : 64
       },
       {
         lines: ["В ЭТОТ ДЕНЬ", "РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"],
-        size: isMobile ? 26 : 46
+        size: isMobile ? 18 : 46
       },
       {
         lines: isMobile 
           ? ["С ДНЁМ РОЖДЕНИЯ", "ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ", "МОЁ СОЛНЫШКО"] 
           : ["С ДНЁМ РОЖДЕНИЯ ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ МОЁ СОЛНЫШКО"],
-        size: isMobile ? 24 : 44
+        size: isMobile ? 18 : 44
       }
     ];
 
