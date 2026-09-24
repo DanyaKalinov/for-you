@@ -13,7 +13,7 @@
   let targetP = 0, p = 0, time = 0;
   const TAU = Math.PI * 2;
   
-  const N = W < 768 ? 7000 : 9000;
+  const N = W < 768 ? 8500 : 10500;
   const P = [];
   const fireworks = [];
   const starSparks = [];
@@ -32,10 +32,10 @@
     rebuildTargets();
   }
 
-  // Генератор точек с оптимизированной разметкой для длинных текстов
-  function sampleText(linesArray, targetFontPx) {
-    const ow = Math.floor(Math.min(W * 0.96, 1200));
-    const oh = Math.floor(Math.min(H * 0.90, 900));
+  // Генератор точек с высокой детализацией для текстов
+  function sampleText(linesArray, targetFontPx, isDense = false) {
+    const ow = Math.floor(Math.min(W * 0.98, 1200));
+    const oh = Math.floor(Math.min(H * 0.92, 900));
     const oc = document.createElement("canvas");
     oc.width = ow; oc.height = oh;
     const g = oc.getContext("2d", { willReadFrequently: true });
@@ -43,12 +43,12 @@
     let fontPx = targetFontPx;
     g.font = `900 ${fontPx}px "Manrope", "Arial Black", sans-serif`;
 
-    // Точная подгонка размера под ширину холста без искажения пропорций
+    // Точный расчет масштаба
     linesArray.forEach(line => {
       const metrics = g.measureText(line);
       if (metrics.width > ow) {
         const ratio = ow / metrics.width;
-        fontPx = Math.floor(fontPx * ratio * 0.98);
+        fontPx = Math.floor(fontPx * ratio * 0.97);
       }
     });
 
@@ -58,8 +58,7 @@
     g.textAlign = "center"; 
     g.textBaseline = "middle";
 
-    // Увеличенный межстрочный интервал (1.45) предотвращает слипание букв
-    const lineHeight = fontPx * 1.45;
+    const lineHeight = fontPx * 1.38;
     const startY = oh / 2 - ((linesArray.length - 1) * lineHeight) / 2;
 
     linesArray.forEach((line, idx) => {
@@ -68,11 +67,12 @@
 
     const data = g.getImageData(0, 0, ow, oh).data;
     const pts = [];
-    const step = 2;
+    // Для сцены с комплиментами делаем более частую сетку точек (step = 1.6)
+    const step = isDense ? 1.6 : 2;
 
     for (let y = 0; y < oh; y += step) {
       for (let x = 0; x < ow; x += step) {
-        if (data[Math.floor(y) * ow * 4 + Math.floor(x) * 4 + 3] > 100) {
+        if (data[Math.floor(y) * ow * 4 + Math.floor(x) * 4 + 3] > 90) {
           pts.push({ x: x - ow / 2, y: y - oh / 2 });
         }
       }
@@ -122,14 +122,16 @@
     const configs = [
       {
         lines: ["ПРИВЕТ ЛЮБИМАЯ", "СЕГОДНЯ", "ОСОБЕННЫЙ ДЕНЬ"],
-        size: isMobile ? 32 : 48
+        size: isMobile ? 32 : 48,
+        dense: false
       },
       {
         lines: ["ТЫ МОЁ САМОЕ", "ЛЮБИМОЕ ЧУДО"],
-        size: isMobile ? 34 : 52
+        size: isMobile ? 34 : 52,
+        dense: false
       },
       {
-        // Исходный текст из 6 строк без изменений
+        // Сцена с комплиментами: значительно увеличен размер и включена высокая плотность частиц
         lines: [
           "ТВОЯ УЛЫБКА МЕНЯЕТ ВСЁ ВОКРУГ",
           "ОБОЖАЮ ТВОЙ НЕЖНЫЙ ВЗГЛЯД",
@@ -138,25 +140,29 @@
           "РЯДОМ С ТОБОЙ ВСЁ СТАНОВИТСЯ ЯРЧЕ",
           "В ЭТОТ ДЕНЬ РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"
         ],
-        size: isMobile ? 22 : 28
+        size: isMobile ? 26 : 34,
+        dense: true
       },
       {
         lines: ["ТЫ", "НЕВЕРОЯТНАЯ"],
-        size: isMobile ? 42 : 68
+        size: isMobile ? 54 : 80,
+        dense: false
       },
       {
         lines: ["В ЭТОТ ДЕНЬ", "РОДИЛАСЬ МОЯ", "ВСЕЛЕННАЯ"],
-        size: isMobile ? 32 : 50
+        size: isMobile ? 32 : 50,
+        dense: false
       },
       {
         lines: isMobile 
           ? ["С ДНЁМ РОЖДЕНИЯ", "ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ", "МОЁ СОЛНЫШКО"] 
           : ["С ДНЁМ РОЖДЕНИЯ ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ МОЁ СОЛНЫШКО"],
-        size: isMobile ? 28 : 46
+        size: isMobile ? 28 : 46,
+        dense: false
       }
     ];
 
-    textTargets = configs.map(c => sampleText(c.lines, c.size));
+    textTargets = configs.map(c => sampleText(c.lines, c.size, c.dense));
   }
 
   for (let i = 0; i < N; i++) {
@@ -372,11 +378,11 @@
       
       const x = cx + (q.x + driftX);
       const y = cy + (q.y + driftY);
-      const a = isText ? 0.9 : (.3 + .5 * Math.sin(time * 2 + part.phase));
+      const a = isText ? 0.92 : (.3 + .5 * Math.sin(time * 2 + part.phase));
 
       ctx.beginPath();
       ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${a})`;
-      ctx.arc(x, y, isText ? 1.0 : part.size, 0, TAU);
+      ctx.arc(x, y, isText ? 1.05 : part.size, 0, TAU);
       ctx.fill();
     }
 
