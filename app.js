@@ -13,7 +13,6 @@
   let targetP = 0, p = 0, time = 0;
   const TAU = Math.PI * 2;
   
-  // Авто-адаптация количества частиц под мобильные устройства для стабильных 60 FPS
   const N = W < 768 ? 6500 : 9000;
   const P = [];
   const fireworks = [];
@@ -33,11 +32,11 @@
     rebuildTargets();
   }
 
-  // Оптимизированная генерация текста с четким разрешением
+  // Фиксированный холст для текста предотвращает искажения на смартфонах
   function sampleText(linesArray, fontPx) {
-    const oc = document.createElement("canvas");
-    const ow = Math.min(W * 1.2, 1200);
+    const ow = 800;
     const oh = 800;
+    const oc = document.createElement("canvas");
     oc.width = ow; oc.height = oh;
     const g = oc.getContext("2d", { willReadFrequently: true });
     
@@ -56,12 +55,11 @@
 
     const data = g.getImageData(0, 0, ow, oh).data;
     const pts = [];
-    // Высокая плотность точек для четкости шрифта
-    const step = W < 600 ? 1.5 : 2;
+    const step = 2;
 
     for (let y = 0; y < oh; y += step) {
       for (let x = 0; x < ow; x += step) {
-        if (data[Math.floor(y) * ow * 4 + Math.floor(x) * 4 + 3] > 110) {
+        if (data[y * ow * 4 + x * 4 + 3] > 110) {
           pts.push({ x: x - ow / 2, y: y - oh / 2 });
         }
       }
@@ -108,47 +106,39 @@
   function rebuildTargets() {
     const isMobile = W < 600;
 
-    // Адаптивное разбиение фразировок под телефон и ПК
     const configs = [
       {
         lines: ["ПРИВЕТ ЛЮБИМАЯ", "СЕГОДНЯ ОСОБЕННЫЙ ДЕНЬ"],
-        size: isMobile ? 22 : 44
+        size: isMobile ? 26 : 44
       },
       {
-        lines: ["ТЫ  МОЁ САМОЕ", "ЛЮБИМОЕ ЧУДО"],
-        size: isMobile ? 24 : 48
+        lines: ["ТЫ МОЁ САМОЕ", "ЛЮБИМОЕ ЧУДО"],
+        size: isMobile ? 28 : 48
       },
       {
-        lines: isMobile 
-          ? [
-              "ТВОЯ УЛЫБКА МЕНЯЕТ ВСЁ ВОКРУГ",
-              "ОБОЖАЮ ТВОЙ НЕЖНЫЙ ВЗГЛЯД",
-              "С ТОБОЙ НЕВЕРОЯТНО ТЕПЛО",
-              "ТЫ ВДОХНОВЛЯЕШЬ МЕНЯ КАЖДЫЙ ДЕНЬ",
-              "РЯДОМ С ТОБОЙ ВСЁ СТАНОВИТСЯ ЯРЧЕ",
-              "В ЭТОТ ДЕНЬ РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"
-            ]
-          : [
-              "ТВОЯ УЛЫБКА МЕНЯЕТ ВСЁ ВОКРУГ",
-              "ОБОЖАЮ ТВОЙ НЕЖНЫЙ ВЗГЛЯД",
-              "С ТОБОЙ НЕВЕРОЯТНО ТЕПЛО",
-              "ТЫ ВДОХНОВЛЯЕШЬ МЕНЯ КАЖДЫЙ ДЕНЬ",
-              "РЯДОМ С ТОБОЙ ВСЁ СТАНОВИТСЯ ЯРЧЕ",
-              "В ЭТОТ ДЕНЬ РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"
-            ],
-        size: isMobile ? 12 : 22
+        lines: [
+          "ТВОЯ УЛЫБКА МЕНЯЕТ ВСЁ ВОКРУГ",
+          "ОБОЖАЮ ТВОЙ НЕЖНЫЙ ВЗГЛЯД",
+          "С ТОБОЙ НЕВЕРОЯТНО ТЕПЛО",
+          "ТЫ ВДОХНОВЛЯЕШЬ МЕНЯ КАЖДЫЙ ДЕНЬ",
+          "РЯДОМ С ТОБОЙ ВСЁ СТАНОВИТСЯ ЯРЧЕ",
+          "В ЭТОТ ДЕНЬ РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"
+        ],
+        size: isMobile ? 14 : 22
       },
       {
         lines: ["ТЫ НЕВЕРОЯТНАЯ"],
-        size: isMobile ? 28 : 64
+        size: isMobile ? 32 : 64
       },
       {
         lines: ["В ЭТОТ ДЕНЬ", "РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"],
-        size: isMobile ? 22 : 46
+        size: isMobile ? 26 : 46
       },
       {
-        lines: isMobile ? ["С ДНЁМ РОЖДЕНИЯ", "ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ МОЕ СОЛНЫШКО"] : ["С ДНЁМ РОЖДЕНИЯ ЛАТУЛЯ" ],
-        size: isMobile ? 28 : 56
+        lines: isMobile 
+          ? ["С ДНЁМ РОЖДЕНИЯ", "ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ", "МОЁ СОЛНЫШКО"] 
+          : ["С ДНЁМ РОЖДЕНИЯ ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ МОЁ СОЛНЫШКО"],
+        size: isMobile ? 24 : 44
       }
     ];
 
@@ -204,7 +194,6 @@
     p += (targetP - p) * 0.08;
   }
 
-  // ЭФФЕКТ ИЗ ВИДЕО: Вырастание сердца из Love You
   function drawFinalHeartEffect() {
     if (p < 4.6 || p > 5.5) return;
     
@@ -255,7 +244,6 @@
     ctx.restore();
   }
 
-  // Салюты с мгновенным сбросом при листании вверх
   function spawnFirework() {
     if (p > 5.55 && Math.random() < 0.12) {
       const x = rand(W * 0.05, W * 0.95);
@@ -300,9 +288,7 @@
     }
   }
 
-  // Падающие звезды по касанию экрана
   window.addEventListener("pointerdown", (e) => {
-    // Не запускаем эффект, если кликнули по кнопке пересмотра
     if (e.target.closest("#replayBtn")) return;
 
     const x = e.clientX;
