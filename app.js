@@ -14,7 +14,7 @@
   const TAU = Math.PI * 2;
   
   // Авто-адаптация количества частиц под мобильные устройства для стабильных 60 FPS
-  const N = W < 768 ? 5500 : 9000;
+  const N = W < 768 ? 6500 : 9000;
   const P = [];
   const fireworks = [];
   const starSparks = [];
@@ -33,9 +33,11 @@
     rebuildTargets();
   }
 
-  function sampleText(text, fontPx) {
+  // Оптимизированная генерация текста с четким разрешением
+  function sampleText(linesArray, fontPx) {
     const oc = document.createElement("canvas");
-    const ow = 1400, oh = 600;
+    const ow = Math.min(W * 1.2, 1200);
+    const oh = 800;
     oc.width = ow; oc.height = oh;
     const g = oc.getContext("2d", { willReadFrequently: true });
     
@@ -45,21 +47,21 @@
     g.textBaseline = "middle";
     g.font = `900 ${fontPx}px "Manrope", "Arial Black", sans-serif`;
 
-    const lines = text.split("\n");
-    const lineHeight = fontPx * 1.18;
-    const startY = oh / 2 - ((lines.length - 1) * lineHeight) / 2;
+    const lineHeight = fontPx * 1.25;
+    const startY = oh / 2 - ((linesArray.length - 1) * lineHeight) / 2;
 
-    lines.forEach((line, idx) => {
+    linesArray.forEach((line, idx) => {
       g.fillText(line, ow / 2, startY + idx * lineHeight);
     });
 
     const data = g.getImageData(0, 0, ow, oh).data;
     const pts = [];
-    const step = W < 768 ? 3 : 2; // Более легкая выборка точек на мобильных
+    // Высокая плотность точек для четкости шрифта
+    const step = W < 600 ? 1.5 : 2;
 
     for (let y = 0; y < oh; y += step) {
       for (let x = 0; x < ow; x += step) {
-        if (data[(y * ow + x) * 4 + 3] > 120) {
+        if (data[Math.floor(y) * ow * 4 + Math.floor(x) * 4 + 3] > 110) {
           pts.push({ x: x - ow / 2, y: y - oh / 2 });
         }
       }
@@ -104,18 +106,53 @@
 
   let textTargets = [];
   function rebuildTargets() {
-    const scale = Math.min(W / 900, 1.0);
-    
+    const isMobile = W < 600;
+
+    // Адаптивное разбиение фразировок под телефон и ПК
     const configs = [
-      ["ПРИВЕТ ЛЮБИМАЯ,\nСЕГОДНЯ ОСОБЕННЫЙ ДЕНЬ", 48],
-      ["ТЫ МОЁ САМОЕ\nЛЮБИМОЕ ЧУДО", 52],
-      ["ТВОЯ УЛЫБКА МЕНЯЕТ ВСЁ ВОКРУГ\nОБОЖАЮ ТВОЙ НЕЖНЫЙ ВЗГЛЯД\nС ТОБОЙ НЕВЕРОЯТНО ТЕПЛО\nТЫ ВДОХНОВЛЯЕШЬ МЕНЯ КАЖДЫЙ ДЕНЬ\nРЯДОМ С ТОБОЙ ВСЁ СТАНОВИТСЯ ЯРЧЕ\nВ ЭТОТ ДЕНЬ РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ", 24],
-      ["ТЫ НЕВЕРОЯТНАЯ", 68],
-      ["В ЭТОТ ДЕНЬ\nРОДИЛАСЬ МОЯ ВСЕЛЕННАЯ", 48],
-      ["С ДНЁМ РОЖДЕНИЯ ЛАТУЛЯ", 60]
+      {
+        lines: ["ПРИВЕТ ЛЮБИМАЯ", "СЕГОДНЯ ОСОБЕННЫЙ ДЕНЬ"],
+        size: isMobile ? 22 : 44
+      },
+      {
+        lines: ["ТЫ  МОЁ САМОЕ", "ЛЮБИМОЕ ЧУДО"],
+        size: isMobile ? 24 : 48
+      },
+      {
+        lines: isMobile 
+          ? [
+              "ТВОЯ УЛЫБКА МЕНЯЕТ ВСЁ ВОКРУГ",
+              "ОБОЖАЮ ТВОЙ НЕЖНЫЙ ВЗГЛЯД",
+              "С ТОБОЙ НЕВЕРОЯТНО ТЕПЛО",
+              "ТЫ ВДОХНОВЛЯЕШЬ МЕНЯ КАЖДЫЙ ДЕНЬ",
+              "РЯДОМ С ТОБОЙ ВСЁ СТАНОВИТСЯ ЯРЧЕ",
+              "В ЭТОТ ДЕНЬ РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"
+            ]
+          : [
+              "ТВОЯ УЛЫБКА МЕНЯЕТ ВСЁ ВОКРУГ",
+              "ОБОЖАЮ ТВОЙ НЕЖНЫЙ ВЗГЛЯД",
+              "С ТОБОЙ НЕВЕРОЯТНО ТЕПЛО",
+              "ТЫ ВДОХНОВЛЯЕШЬ МЕНЯ КАЖДЫЙ ДЕНЬ",
+              "РЯДОМ С ТОБОЙ ВСЁ СТАНОВИТСЯ ЯРЧЕ",
+              "В ЭТОТ ДЕНЬ РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"
+            ],
+        size: isMobile ? 12 : 22
+      },
+      {
+        lines: ["ТЫ НЕВЕРОЯТНАЯ"],
+        size: isMobile ? 28 : 64
+      },
+      {
+        lines: ["В ЭТОТ ДЕНЬ", "РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"],
+        size: isMobile ? 22 : 46
+      },
+      {
+        lines: isMobile ? ["С ДНЁМ РОЖДЕНИЯ", "ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ МОЕ СОЛНЫШКО"] : ["С ДНЁМ РОЖДЕНИЯ ЛАТУЛЯ" ],
+        size: isMobile ? 28 : 56
+      }
     ];
 
-    textTargets = configs.map(([txt, size]) => sampleText(txt, Math.round(size * scale)));
+    textTargets = configs.map(c => sampleText(c.lines, c.size));
   }
 
   for (let i = 0; i < N; i++) {
@@ -326,7 +363,7 @@
 
     const col = palette(), cx = W / 2, cy = H / 2;
     const isText = (p < 1.6 || (p > 2.6 && p < 4.2) || p > 5.4);
-    const driftMult = isText ? 0.05 : 0.8;
+    const driftMult = isText ? 0.03 : 0.8;
 
     for (let i = 0; i < P.length; i++) {
       const part = P[i], q = target(part, i);
@@ -335,11 +372,11 @@
       
       const x = cx + (q.x + driftX);
       const y = cy + (q.y + driftY);
-      const a = isText ? 0.85 : (.3 + .5 * Math.sin(time * 2 + part.phase));
+      const a = isText ? 0.9 : (.3 + .5 * Math.sin(time * 2 + part.phase));
 
       ctx.beginPath();
       ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${a})`;
-      ctx.arc(x, y, isText ? 1.1 : part.size, 0, TAU);
+      ctx.arc(x, y, isText ? 1.0 : part.size, 0, TAU);
       ctx.fill();
     }
 
