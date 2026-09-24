@@ -13,7 +13,8 @@
   let targetP = 0, p = 0, time = 0;
   const TAU = Math.PI * 2;
   
-  const N = W < 768 ? 8500 : 10500;
+  // Увеличиваем число частиц для четкости
+  const N = W < 768 ? 11000 : 13000;
   const P = [];
   const fireworks = [];
   const starSparks = [];
@@ -32,10 +33,10 @@
     rebuildTargets();
   }
 
-  // Генератор точек с высокой детализацией для текстов
-  function sampleText(linesArray, targetFontPx, isDense = false) {
-    const ow = Math.floor(Math.min(W * 0.98, 1200));
-    const oh = Math.floor(Math.min(H * 0.92, 900));
+  // Оптимизированный сэмплер текста с высочайшей чёткостью
+  function sampleText(linesArray, targetFontPx) {
+    const ow = Math.floor(Math.min(W * 0.95, 1000));
+    const oh = Math.floor(Math.min(H * 0.90, 800));
     const oc = document.createElement("canvas");
     oc.width = ow; oc.height = oh;
     const g = oc.getContext("2d", { willReadFrequently: true });
@@ -43,12 +44,12 @@
     let fontPx = targetFontPx;
     g.font = `900 ${fontPx}px "Manrope", "Arial Black", sans-serif`;
 
-    // Точный расчет масштаба
+    // Авто-масштаб под ширину экрана
     linesArray.forEach(line => {
       const metrics = g.measureText(line);
       if (metrics.width > ow) {
         const ratio = ow / metrics.width;
-        fontPx = Math.floor(fontPx * ratio * 0.97);
+        fontPx = Math.floor(fontPx * ratio * 0.95);
       }
     });
 
@@ -58,7 +59,7 @@
     g.textAlign = "center"; 
     g.textBaseline = "middle";
 
-    const lineHeight = fontPx * 1.38;
+    const lineHeight = fontPx * 1.35;
     const startY = oh / 2 - ((linesArray.length - 1) * lineHeight) / 2;
 
     linesArray.forEach((line, idx) => {
@@ -67,12 +68,11 @@
 
     const data = g.getImageData(0, 0, ow, oh).data;
     const pts = [];
-    // Для сцены с комплиментами делаем более частую сетку точек (step = 1.6)
-    const step = isDense ? 1.6 : 2;
+    const step = W < 600 ? 1.5 : 2; // Более мелкий шаг для высокой детализации
 
     for (let y = 0; y < oh; y += step) {
       for (let x = 0; x < ow; x += step) {
-        if (data[Math.floor(y) * ow * 4 + Math.floor(x) * 4 + 3] > 90) {
+        if (data[Math.floor(y) * ow * 4 + Math.floor(x) * 4 + 3] > 110) {
           pts.push({ x: x - ow / 2, y: y - oh / 2 });
         }
       }
@@ -122,16 +122,14 @@
     const configs = [
       {
         lines: ["ПРИВЕТ ЛЮБИМАЯ", "СЕГОДНЯ", "ОСОБЕННЫЙ ДЕНЬ"],
-        size: isMobile ? 32 : 48,
-        dense: false
+        size: isMobile ? 32 : 48
       },
       {
         lines: ["ТЫ МОЁ САМОЕ", "ЛЮБИМОЕ ЧУДО"],
-        size: isMobile ? 34 : 52,
-        dense: false
+        size: isMobile ? 34 : 52
       },
       {
-        // Сцена с комплиментами: значительно увеличен размер и включена высокая плотность частиц
+        // 6 строк комплиментов с идеальным размером шрифта
         lines: [
           "ТВОЯ УЛЫБКА МЕНЯЕТ ВСЁ ВОКРУГ",
           "ОБОЖАЮ ТВОЙ НЕЖНЫЙ ВЗГЛЯД",
@@ -140,29 +138,25 @@
           "РЯДОМ С ТОБОЙ ВСЁ СТАНОВИТСЯ ЯРЧЕ",
           "В ЭТОТ ДЕНЬ РОДИЛАСЬ МОЯ ВСЕЛЕННАЯ"
         ],
-        size: isMobile ? 26 : 34,
-        dense: true
+        size: isMobile ? 21 : 32
       },
       {
         lines: ["ТЫ", "НЕВЕРОЯТНАЯ"],
-        size: isMobile ? 54 : 80,
-        dense: false
+        size: isMobile ? 50 : 76
       },
       {
         lines: ["В ЭТОТ ДЕНЬ", "РОДИЛАСЬ МОЯ", "ВСЕЛЕННАЯ"],
-        size: isMobile ? 32 : 50,
-        dense: false
+        size: isMobile ? 32 : 50
       },
       {
         lines: isMobile 
           ? ["С ДНЁМ РОЖДЕНИЯ", "ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ", "МОЁ СОЛНЫШКО"] 
           : ["С ДНЁМ РОЖДЕНИЯ ЛАТУЛЯ", "Я ЛЮБЛЮ ТЕБЯ МОЁ СОЛНЫШКО"],
-        size: isMobile ? 28 : 46,
-        dense: false
+        size: isMobile ? 28 : 46
       }
     ];
 
-    textTargets = configs.map(c => sampleText(c.lines, c.size, c.dense));
+    textTargets = configs.map(c => sampleText(c.lines, c.size));
   }
 
   for (let i = 0; i < N; i++) {
@@ -173,7 +167,7 @@
       star: pointStar(),
       cake: pointCakeAndPetals(),
       z: Math.random(), 
-      size: rand(0.9, 1.6), 
+      size: rand(1.1, 1.8), 
       phase: Math.random() * TAU, 
       speed: rand(.3, 1.1)
     });
@@ -369,7 +363,9 @@
 
     const col = palette(), cx = W / 2, cy = H / 2;
     const isText = (p < 1.6 || (p > 2.6 && p < 4.2) || p > 5.4);
-    const driftMult = isText ? 0.03 : 0.8;
+    
+    // В режиме текста полностью убираем дрейф и колебания, чтобы не размывать буквы
+    const driftMult = isText ? 0 : 0.8;
 
     for (let i = 0; i < P.length; i++) {
       const part = P[i], q = target(part, i);
@@ -378,11 +374,14 @@
       
       const x = cx + (q.x + driftX);
       const y = cy + (q.y + driftY);
-      const a = isText ? 0.92 : (.3 + .5 * Math.sin(time * 2 + part.phase));
+      
+      // В режиме текста делаем максимальную прозрачность и чуть больший радиус (1.6px)
+      const a = isText ? 1.0 : (.3 + .5 * Math.sin(time * 2 + part.phase));
+      const size = isText ? 1.55 : part.size;
 
       ctx.beginPath();
       ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${a})`;
-      ctx.arc(x, y, isText ? 1.05 : part.size, 0, TAU);
+      ctx.arc(x, y, size, 0, TAU);
       ctx.fill();
     }
 
