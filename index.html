@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Для тебя ❤️</title>
+  
+  <!-- Превью для мессенджеров (Telegram, WhatsApp) -->
+  <meta property="og:title" content="Специально для тебя ❤️">
+  <meta property="og:description" content="Маленький интерактивный сюрприз">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800;900&family=Cormorant+Garamond:ital,wght@0,600;1,500&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="loader">
+    <div class="loader-heart">♥</div>
+  </div>
+
+  <canvas id="particles"></canvas>
+  <div class="glow"></div>
+  <div class="grain"></div>
+
+  <header class="top">
+    <div class="brand">для тебя <span>♥</span></div>
+    <div class="progress"><i id="progress"></i></div>
+    <div class="counter" id="counter">01 / 07</div>
+  </header>
+
+  <main>
+    <section class="scene" data-scene="0"></section>
+    <section class="scene" data-scene="1"></section>
+    <section class="scene" data-scene="2"></section>
+    <section class="scene" data-scene="3"></section>
+    <section class="scene" data-scene="4"></section>
+    <section class="scene" data-scene="5"></section>
+    <section class="scene" data-scene="6"></section>
+  </main>
+
+  <div class="scroll-hint" id="scrollHint">Листай вниз <span>↓</span></div>
+  
+  <button id="replayBtn" class="replay-btn">Пересмотреть сначала ↺</button>
+
+  <script src="app.js"></script>
+</body>
+</html>
